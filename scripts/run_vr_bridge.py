@@ -41,26 +41,26 @@ class SteamVrBridge:
     def update(self):
         left_controller_pose = self.get_controller_pose(self.left_controller_index)
         right_controller_pose = self.get_controller_pose(self.right_controller_index)
-        
+
         # Create rotation matrix
         rot = Rotation.from_rotvec([np.pi/2, 0, 0])
         rot_matrix = np.eye(4)
         rot_matrix[:3, :3] = rot.as_matrix()
-        
+
         # rotate by 90 degrees around the x axis
         self.controller_states["left"]["pose"] = (rot_matrix @ left_controller_pose).tolist()
         self.controller_states["right"]["pose"] = (rot_matrix @ right_controller_pose).tolist()
 
         left_controller_button_pressed, left_controller_trigger = self.get_controller_state(self.left_controller_index)
         right_controller_button_pressed, right_controller_trigger = self.get_controller_state(self.right_controller_index)
-        
+
         self.controller_states["left"]["button_pressed"] = left_controller_button_pressed
         self.controller_states["right"]["button_pressed"] = right_controller_button_pressed
         self.controller_states["left"]["trigger"] = left_controller_trigger
         self.controller_states["right"]["trigger"] = right_controller_trigger
 
         return self.controller_states
-    
+
     def __del__(self):
         openvr.shutdown()
 

@@ -1,5 +1,0 @@
-setuptools
-numpy
-scipy
-openvr
-cc.udp

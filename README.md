@@ -9,7 +9,7 @@ This is the codebase used for Berkeley Humanoid Lite teleoperation demonstration
 - Steam and SteamVR install
 
 
-## Setting up scene
+## Setting up VR scene
 
 In SteamVR Room Setup, make sure that the arrow, which represents the Y axis direction, is pointing towards left of the world.
 
@@ -21,17 +21,11 @@ In SteamVR Room Setup, make sure that the arrow, which represents the Y axis dir
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-2. Create environment
+2. Create environment and install dependencies
 
 ```powershell
-uv venv --python 3.10
+uv sync
 ```
-
-```powershell
-uv pip install -r requirements.txt
-```
-
-3. Install dependencies
 
 ## Running the script
 
@@ -40,7 +34,7 @@ uv pip install -r requirements.txt
 2. Run `run_vr_bridge.py`:
 
 ```powershell
-uv run .\run_vr_bridge.py
+uv run ./scripts/run_vr_bridge.py
 ```
 
 3. Check if the VR controllers are tracked by pressing triggers. The console log should show changing values.
