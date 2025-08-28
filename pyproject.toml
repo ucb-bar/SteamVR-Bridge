@@ -9,5 +9,5 @@ dependencies = [
     "numpy",
     "scipy",
     "cc.udp",
-    "openvr",
+    "pyopenxr",
 ]
