@@ -1,5 +1,8 @@
+"""
+Modified from the example code at https://github.com/cmbruns/pyopenxr_examples/blob/main/xr_examples/headless.py
+"""
+
 import platform
-import numpy as np
 import xr
 
 from .vive_controller import ViveController
@@ -13,36 +16,38 @@ else:
 
 
 class SteamVrBridge:
+    """
+    This class creates a headless OpenXR extension that communicates with SteamVR and retrieves
+    the state of the headset and controllers.
+    """
     def __init__(self):
-        # Enumerate the required instance extensions
+        # enumerate the required instance extensions
         extensions = [xr.MND_HEADLESS_EXTENSION_NAME]  # Permits use without a graphics display
 
-        # Tracking controllers in headless mode requires a way to get the current XrTime
+        # tracking controllers in headless mode requires a way to get the current XrTime
         if platform.system() == "Windows":
             extensions.append(xr.KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME)
         else:  # Linux
             extensions.append(xr.KHR_CONVERT_TIMESPEC_TIME_EXTENSION_NAME)
 
-        # Create instance for headless use
+        # create instance for headless use
         self.instance = xr.create_instance(xr.InstanceCreateInfo(
             enabled_extension_names=extensions,
         ))
-        self.system = xr.get_system(
-            self.instance,
-            # Presumably the form factor is irrelevant in headless mode...
-            xr.SystemGetInfo(form_factor=xr.FormFactor.HEAD_MOUNTED_DISPLAY),
-        )
+
+        system_id = xr.get_system(self.instance, xr.SystemGetInfo(form_factor=xr.FormFactor.HEAD_MOUNTED_DISPLAY))
         self.session = xr.create_session(
             self.instance,
             xr.SessionCreateInfo(
-                system_id=self.system,
-                next=None,  # No GraphicsBinding structure is required here in HEADLESS mode
+                system_id=system_id,
+                next=None,  # no GraphicsBinding structure is required here in HEADLESS mode
             )
         )
 
+        # create the performance counter used to get accurate system time
         self.performance_counter = PerformanceCounter(self.instance)
 
-        # Set up controller tracking, as one possible legitimate headless activity
+        # set up controller tracking, as one possible legitimate headless activity
         self.action_set = xr.create_action_set(
             instance=self.instance,
             create_info=xr.ActionSetCreateInfo(
@@ -60,6 +65,7 @@ class SteamVrBridge:
             self.right_controller,
         ]
 
+        # create bindings and action sets for the controllers, so that we can receive events from them
         suggested_bindings = []
         for controller in self.controllers:
             suggested_bindings.extend(controller.register(self.action_set, self.session))
@@ -79,13 +85,14 @@ class SteamVrBridge:
                 suggested_bindings=vive_bindings,
             ),
         )
-
         xr.attach_session_action_sets(
             session=self.session,
             attach_info=xr.SessionActionSetsAttachInfo(
                 action_sets=[self.action_set],
             ),
         )
+
+        # create the reference coordinate spaces
         self.reference_space = xr.create_reference_space(
             session=self.session,
             create_info=xr.ReferenceSpaceCreateInfo(
@@ -99,12 +106,16 @@ class SteamVrBridge:
             ),
         )
 
+        # initialize the session state
         self.session_state = xr.SessionState.UNKNOWN
-        # Loop over session frames
+
+        # internal state of the HMD
+        self._hmd_position = xr.Vector3f()
+        self._hmd_orientation = xr.Quaternionf()
 
     def update(self):
-        # Poll session state changed events
         while True:
+            # poll session state changed events
             try:
                 event_buffer = xr.poll_event(self.instance)
                 event_type = xr.StructureType(event_buffer.type)
@@ -113,7 +124,9 @@ class SteamVrBridge:
                         ctypes.byref(event_buffer),
                         ctypes.POINTER(xr.EventDataSessionStateChanged)).contents
                     self.session_state = xr.SessionState(event.state)
+
                     print(f"OpenXR session state changed to xr.SessionState.{self.session_state.name}")
+
                     if self.session_state == xr.SessionState.READY:
                         xr.begin_session(
                             self.session,
@@ -126,13 +139,14 @@ class SteamVrBridge:
                         xr.destroy_session(self.session)
                         self.session = None
             except xr.EventUnavailable:
-                break  # There is no event in the queue at this moment
+                break  # there is no event in the queue at this moment
 
         # wait_frame()/begin_frame()/end_frame() are not required in headless mode
-        xr.wait_frame(session=self.session)  # Helps SteamVR show application name better
+        xr.wait_frame(session=self.session)  # helps SteamVR show application name better
 
         xr_time_now = self.performance_counter.get()
 
+        # sync actions
         active_action_set = xr.ActiveActionSet(
             action_set=self.action_set,
             subaction_path=xr.NULL_PATH,
@@ -143,21 +157,22 @@ class SteamVrBridge:
                 active_action_sets=[active_action_set],
             ),
         )
-        hmd_location = xr.locate_space(
+
+        # get the location of the headset
+        hmd_state = xr.locate_space(
             space=self.view_reference_space,
             base_space=self.reference_space,
             time=xr_time_now,
         )
-        # if hmd_location.location_flags & xr.SPACE_LOCATION_POSITION_VALID_BIT:
-        #     print(f"HMD location: {hmd_location.pose}")
+        if hmd_state.location_flags & xr.SPACE_LOCATION_POSITION_VALID_BIT:
+            self._hmd_position = hmd_state.pose.position
+            self._hmd_orientation = hmd_state.pose.orientation
 
+        # update the controller states
         for controller in self.controllers:
             controller.update(self.session, xr_time_now)
 
     def exit(self):
-        # Clean up
-        system = xr.NULL_SYSTEM_ID
+        # clean up
         xr.destroy_action_set(self.action_set)
-        self.action_set = None
         xr.destroy_instance(self.instance)
-        self.instance = None
