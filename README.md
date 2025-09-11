@@ -52,3 +52,20 @@ uv run ./scripts/run_vr_bridge.py
 ```
 
 3. Check if the VR controllers are tracked by pressing triggers. The console log should show changing values.
+
+
+## Citation
+
+If you find this code useful, we would appreciate if you would cite our paper:
+
+```
+@article{chi2025demonstrating,
+  title={Demonstrating Berkeley Humanoid Lite: An Open-source, Accessible, and Customizable 3D-printed Humanoid Robot},
+  author={Yufeng Chi and Qiayuan Liao and Junfeng Long and Xiaoyu Huang and Sophia Shao and Borivoje Nikolic and Zhongyu Li and Koushil Sreenath},
+  year={2025},
+  eprint={2504.17249},
+  archivePrefix={arXiv},
+  primaryClass={cs.RO},
+  url={https://arxiv.org/abs/2504.17249}, 
+}
+```
