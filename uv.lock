@@ -1,35 +1,9 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.11'",
     "python_full_version < '3.11'",
-]
-
-[[package]]
-name = "cc-serializer"
-version = "2024.8.17"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pyserial" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/bf/3d/e9e5cc0fb7c5c93ab4e71a2b171dbde13e5c59b0a9fa27b2ce1ddcaa52ab/cc_serializer-2024.8.17.tar.gz", hash = "sha256:c679fded4395650106a477cf2621fcfa6b4f56b9a86b02b995c7e0d5212bc389", size = 4034, upload-time = "2024-08-17T05:32:24.459Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cb/4b/e174544c6adfcfe88f4695dc1bcab3bc2107ccb0577a00e0dc22a2edc668/cc.serializer-2024.8.17-py3-none-any.whl", hash = "sha256:ed7a1c9468a9c41f093c42f8cb6d8ce51f494413971ffd7f649e3b4397049919", size = 5077, upload-time = "2024-08-17T05:32:22.961Z" },
-]
-
-[[package]]
-name = "cc-udp"
-version = "2024.9.1.post1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cc-serializer" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/16/12bde7665cc0dacb0acaa02c37b3a4f0b6887dc43093b1f76ca6c980ad83/cc_udp-2024.9.1.post1.tar.gz", hash = "sha256:d4eae126652f40034ee382683de41cd045f522933d6bab8ee98bbd6977a0c0d5", size = 3484, upload-time = "2024-09-01T08:18:56.61Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/30/f49974680f555b40c3a334de8dc3af39c1f50dfb875655f796f4260565ef/cc.udp-2024.9.1.post1-py3-none-any.whl", hash = "sha256:dca6a968091855ad91e31ebd9cd35506815d559e103827e9d8a7aa93c87ece03", size = 3609, upload-time = "2024-09-01T08:18:55.278Z" },
 ]
 
 [[package]]
@@ -222,15 +196,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyserial"
-version = "3.5"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1e/7d/ae3f0a63f41e4d2f6cb66a5b57197850f919f59e558159a4dd3a818f5082/pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb", size = 159125, upload-time = "2020-11-23T03:59:15.045Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0", size = 90585, upload-time = "2020-11-23T03:59:13.41Z" },
-]
-
-[[package]]
 name = "scipy"
 version = "1.15.3"
 source = { registry = "https://pypi.org/simple" }
@@ -371,20 +336,33 @@ name = "steamvr-bridge"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "cc-udp" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pyopenxr" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "setuptools" },
+    { name = "udpack" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "cc-udp" },
     { name = "numpy" },
     { name = "pyopenxr" },
     { name = "scipy" },
     { name = "setuptools" },
+    { name = "udpack" },
+]
+
+[[package]]
+name = "udpack"
+version = "2026.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/35/294d48c2eeb58028924e78300b575467900bd51045cccd18b206816e0cfb/udpack-2026.3.1.tar.gz", hash = "sha256:014f63a6af2c4a2e977e2dd19f9cbe4ad1e3fb4a2894bee4c63f65f69f953214", size = 103052, upload-time = "2026-03-02T07:22:41.342Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/5d/07e6eddbb8ade220a60b880f794c8bf176fa2792944f442a18f206d28414/udpack-2026.3.1-py3-none-any.whl", hash = "sha256:242b7db0f75e48f74fa3b733c990f24ed9f538f3dfdc622a18faccf6edb67c2c", size = 4060, upload-time = "2026-03-02T07:22:39.927Z" },
 ]

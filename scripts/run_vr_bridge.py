@@ -2,7 +2,7 @@ import time
 
 from scipy.spatial.transform import Rotation
 import numpy as np
-from cc.udp import UDP
+from udpack import UDP
 from steamvr_bridge import SteamVrBridge
 
 

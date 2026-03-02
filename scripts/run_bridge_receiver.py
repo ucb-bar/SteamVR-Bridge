@@ -4,7 +4,7 @@ Run this on the machine that should receive VR controller data (the bridge sends
 """
 import time
 
-from cc.udp import UDP
+from udpack import UDP
 
 
 if __name__ == "__main__":
