@@ -9,7 +9,7 @@ from steamvr_bridge import SteamVrBridge
 if __name__ == "__main__":
     bridge = SteamVrBridge()
 
-    udp = UDP(recv_addr=("0.0.0.0", 11005), send_addr=("172.28.0.5", 11005))
+    udp = UDP(recv_addr=None, send_addr=("0.0.0.0", 11005))
 
     controller_states = {
         "left": {
