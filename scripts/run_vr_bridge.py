@@ -52,6 +52,18 @@ if __name__ == "__main__":
         controller_states["left"]["trigger"] = bridge.left_controller.trigger
         controller_states["right"]["trigger"] = bridge.right_controller.trigger
 
-        print(f"{time.time():.2f}", controller_states["left"]["button_pressed"], controller_states["left"]["trigger"], controller_states["right"]["button_pressed"], controller_states["right"]["trigger"])
+        lp = bridge.left_controller.position
+        rp = bridge.right_controller.position
+        lt = controller_states["left"]["trigger"]
+        rt = controller_states["right"]["trigger"]
+        lg = controller_states["left"]["button_pressed"]
+        rg = controller_states["right"]["button_pressed"]
+
+        print(
+            f"[{time.time():.1f}]  "
+            f"L: pos=({lp.x:7.3f}, {lp.y:7.3f}, {lp.z:7.3f})  grip={'●' if lg else '○'}  trig={lt:.2f}  |  "
+            f"R: pos=({rp.x:7.3f}, {rp.y:7.3f}, {rp.z:7.3f})  grip={'●' if rg else '○'}  trig={rt:.2f}",
+            flush=True,
+        )
 
         udp.send_dict(controller_states)
