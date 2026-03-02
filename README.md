@@ -69,3 +69,75 @@ If you find this code useful, we would appreciate if you would cite our paper:
   url={https://arxiv.org/abs/2504.17249}, 
 }
 ```
+
+## Troubleshoot
+
+### SteamVR Error 307
+
+`IPC Compositor Invalid Connect Response`
+
+This error is most commonly caused by missing 32-bit NVIDIA and/or Vulkan libraries, or by running under the wrong display server (Wayland instead of X11).
+
+Follow the steps below to diagnose and fix the issue.
+
+#### 1. Verify You’re on X11 (Not Wayland)
+
+SteamVR currently requires an X11 session.
+
+Check your session type:
+
+```bash
+echo $XDG_SESSION_TYPE
+```
+
+The output must be `x11`.
+
+If it returns `wayland`, log out and select an X11 session from your display manager before continuing.
+
+#### 2. Confirm NVIDIA Driver Is Loaded
+
+Verify that the NVIDIA driver is active and matches the installed packages:
+
+```bash
+nvidia-smi
+```
+
+Example output:
+
+```bash
+Sun Mar  1 20:37:15 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 590.48.01              Driver Version: 590.48.01      CUDA Version: 13.1     |
++-----------------------------------------+------------------------+----------------------+
+| ... |
+```
+
+If this command fails or reports a mismatch, reinstall or fix your NVIDIA drivers before proceeding.
+
+#### 3. Install Required Vulkan Libraries
+
+Install Vulkan tools and runtime libraries:
+
+```bash
+sudo apt install vulkan-tools libvulkan1
+```
+
+After installation, **reboot your system**.
+
+#### 4. Verify the Active Vulkan Driver
+
+Check which Vulkan driver is being used:
+
+```bash
+vulkaninfo | grep driverName
+```
+
+Example output:
+
+```bash
+	driverName                                           = Intel open-source Mesa driver
+	driverName                                           = NVIDIA
+	driverName                                           = llvmpipe
+```
+
+You should see NVIDIA listed.
