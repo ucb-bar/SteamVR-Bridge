@@ -22,15 +22,11 @@ if __name__ == "__main__":
         left = controller_states.get("left", {})
         right = controller_states.get("right", {})
 
-        # Extract position from 4x4 pose matrix (last column is position in some conventions,
-        # but run_vr_bridge uses position in columns 0:3 - check structure)
-        # Pose matrix: left_rot_matrix[:, 0:3] has position in first 3 rows of cols 0-2
-        # Actually looking at run_vr_bridge: left_rot_matrix[:, 0:3] = position - that assigns
-        # to columns 0,1,2. So position is in pose[:3, 0], pose[:3, 1], pose[:3, 2]
         def pos_from_pose(pose):
+            """Extract translation from a 4x4 homogeneous transform (last column)."""
             if not pose or len(pose) < 3:
                 return 0, 0, 0
-            return pose[0][0], pose[1][0], pose[2][0]
+            return pose[0][3], pose[1][3], pose[2][3]
 
         lp = pos_from_pose(left.get("pose", []))
         rp = pos_from_pose(right.get("pose", []))
@@ -39,9 +35,15 @@ if __name__ == "__main__":
         lt = left.get("trigger", 0)
         rt = right.get("trigger", 0)
 
+        # relative_pose is [x, y, z, qw, qx, qy, qz]
+        l_rel = left.get("relative_pose", [0, 0, 0, 1, 0, 0, 0])
+        r_rel = right.get("relative_pose", [0, 0, 0, 1, 0, 0, 0])
+
         print(
             f"[{time.time():.1f}]  "
-            f"L: pos=({lp[0]:7.3f}, {lp[1]:7.3f}, {lp[2]:7.3f})  grip={'●' if lg else '○'}  trig={lt:.2f}  |  "
-            f"R: pos=({rp[0]:7.3f}, {rp[1]:7.3f}, {rp[2]:7.3f})  grip={'●' if rg else '○'}  trig={rt:.2f}",
+            f"L: pos=({lp[0]:7.3f}, {lp[1]:7.3f}, {lp[2]:7.3f})  "
+            f"Δ=({l_rel[0]:7.3f}, {l_rel[1]:7.3f}, {l_rel[2]:7.3f})  grip={'●' if lg else '○'}  trig={lt:.2f}  |  "
+            f"R: pos=({rp[0]:7.3f}, {rp[1]:7.3f}, {rp[2]:7.3f})  "
+            f"Δ=({r_rel[0]:7.3f}, {r_rel[1]:7.3f}, {r_rel[2]:7.3f})  grip={'●' if rg else '○'}  trig={rt:.2f}",
             flush=True,
         )

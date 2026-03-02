@@ -1,6 +1,8 @@
 import numpy as np
 import xr
 
+from .frame_transform import _vr_to_robotics_position, _vr_to_robotics_orientation
+
 
 class ViveController:
     """
@@ -16,14 +18,19 @@ class ViveController:
         self.path = self.path_array[0]
 
         # controller states
-        self._position = xr.Vector3f()
-        self._orientation = xr.Quaternionf()
+        self._world_position = xr.Vector3f()
+        self._world_orientation = xr.Quaternionf()
         self._menu_button = False
         self._trackpad_x = 0.0
         self._trackpad_y = 0.0
         self._trackpad_button = False
         self._trigger = 0.0
         self._grip_button = False
+
+        # relative transform (toggled on/off by grip; cleared to zero by grip+trigger)
+        self._delta_position = xr.Vector3f()
+        self._delta_orientation = xr.Quaternionf()
+        self._delta_orientation.w = 1.0
 
     def register(self, action_set: xr.ActionSet, session: xr.Session):
         name_lower = f"{self.name.lower()}"
@@ -179,8 +186,10 @@ class ViveController:
             time=xr_time_now,
         )
         if space_location.location_flags & xr.SPACE_LOCATION_POSITION_VALID_BIT:
-            self._position = space_location.pose.position
-            self._orientation = space_location.pose.orientation
+            steamvr_position = space_location.pose.position
+            steamvr_orientation = space_location.pose.orientation
+            self._world_position = _vr_to_robotics_position(steamvr_position)
+            self._world_orientation = _vr_to_robotics_orientation(steamvr_orientation)
 
         self._menu_button = xr.get_action_state_boolean(
             session=session,
@@ -225,9 +234,53 @@ class ViveController:
         return np.concatenate((pos, quat), axis=0)
 
     @property
+    def relative_pose(self) -> np.ndarray:
+        """
+        Get the relative controller pose delta.  Grip toggles streaming on/off;
+        grip + trigger (fully pressed) resets to identity.
+
+        Returns:
+            A 7-element numpy array organized as ``[x, y, z, qw, qx, qy, qz]``.
+        """
+        pos = np.array([
+            self._delta_position.x,
+            self._delta_position.y,
+            self._delta_position.z,
+        ])
+        quat = np.array([
+            self._delta_orientation.w,
+            self._delta_orientation.x,
+            self._delta_orientation.y,
+            self._delta_orientation.z,
+        ])
+        return np.concatenate((pos, quat), axis=0)
+
+    @property
+    def relative_position(self) -> xr.Vector3f:
+        """
+        Get the relative controller position delta (meters).  Grip toggles streaming
+        on/off; grip + trigger (fully pressed) resets to zero.
+
+        Returns:
+            The relative position as a ``Vector3f`` struct.
+        """
+        return self._delta_position
+
+    @property
+    def relative_orientation(self) -> xr.Quaternionf:
+        """
+        Get the relative controller orientation delta.  Grip toggles streaming
+        on/off; grip + trigger (fully pressed) resets to identity.
+
+        Returns:
+            The relative orientation as a ``Quaternionf`` struct.
+        """
+        return self._delta_orientation
+
+    @property
     def position(self) -> xr.Vector3f:
         """
-        Get the controller position in meters.
+        Get the controller position in the world frame in meters.
 
         To get each element of the position, use `position.x`, `position.y`, and `position.z`.
         To get the position as a numpy array, use `position.as_numpy()`.
@@ -235,12 +288,12 @@ class ViveController:
         Returns:
             The controller position as a `Vector3f` struct.
         """
-        return self._position
+        return self._world_position
 
     @property
     def orientation(self) -> xr.Quaternionf:
         """
-        Get the controller orientation as a quaternion.
+        Get the controller orientation in the world frame as a quaternion.
 
         To get each element of the orientation, use `orientation.w`, `orientation.x`, `orientation.y`, and
         `orientation.z`.
@@ -250,7 +303,7 @@ class ViveController:
         Returns:
             The controller orientation as a `Quaternionf` struct.
         """
-        return self._orientation
+        return self._world_orientation
 
     @property
     def menu_button(self) -> bool:

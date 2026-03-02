@@ -54,6 +54,18 @@ uv run ./scripts/run_vr_bridge.py
 3. Check if the VR controllers are tracked by pressing triggers. The console log should show changing values.
 
 
+## Controller control modes
+
+Each VIVE controller exposes a **relative pose** (position + orientation delta) in addition to its absolute pose. The relative pose is used for teleoperation (e.g., commanding a robot end-effector offset). The behavior is controlled by the **grip** and **trigger** buttons:
+
+| Action | Result |
+|--------|--------|
+| **Grip** (press / release) | Toggle between *Following* and *Hold* modes. In Following mode, the relative pose updates every frame as the controller moves. In Hold mode, the relative pose stays fixed at its last value. |
+| **Grip + Trigger** (both held, trigger fully pressed) | Reset translation to zero and enter Following mode. By default, orientation is left unchanged; pass `recenter_resets_rotation=True` to `SteamVrBridge()` to also reset orientation. |
+
+The grip acts as a toggle on each press; grip+trigger always recenters translation and enables Following mode, regardless of the current mode.
+
+
 ## Citation
 
 If you find this code useful, we would appreciate if you would cite our paper:
