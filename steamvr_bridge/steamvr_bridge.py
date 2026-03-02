@@ -141,8 +141,13 @@ class SteamVrBridge:
             except xr.EventUnavailable:
                 break  # there is no event in the queue at this moment
 
-        # wait_frame()/begin_frame()/end_frame() are not required in headless mode
-        xr.wait_frame(session=self.session)  # helps SteamVR show application name better
+        if self.session is None:
+            return
+
+        # Skip wait_frame: it can block indefinitely when the SteamVR compositor
+        # isn't advancing (e.g. vrmonitor/libQt5 issues). Headless polling works
+        # without it; we use the performance counter for xrTime instead.
+        # xr.wait_frame(session=self.session)
 
         xr_time_now = self.performance_counter.get()
 
