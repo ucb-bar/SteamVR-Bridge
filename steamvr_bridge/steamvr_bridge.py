@@ -195,7 +195,7 @@ class SteamVrBridge:
         for i, controller in enumerate(self.controllers):
             controller.update(self.session, xr_time_now)
 
-            grip = controller.grip_button
+            grip = controller.grip_button_pressed
             trigger_full = controller.trigger >= 1.0
 
             # Grip rising edge: toggle between streaming and frozen tracking
@@ -203,11 +203,11 @@ class SteamVrBridge:
                 self._tracking_active[i] = not self._tracking_active[i]
                 if self._tracking_active[i]:
                     # Place anchor so the existing accumulated delta is preserved
-                    prev_rp = controller.relative_position
+                    prev_rp = controller.relative_location
                     ap = xr.Vector3f()
-                    ap.x = controller.position.x - prev_rp.x
-                    ap.y = controller.position.y - prev_rp.y
-                    ap.z = controller.position.z - prev_rp.z
+                    ap.x = controller.location.x - prev_rp.x
+                    ap.y = controller.location.y - prev_rp.y
+                    ap.z = controller.location.z - prev_rp.z
                     self._anchor_position[i] = ap
 
                     # q_anchor = q_prev_delta^{-1} * q_current
@@ -226,15 +226,15 @@ class SteamVrBridge:
 
             # Grip held + trigger reaches 1.0: clear delta and force tracking on
             if grip and trigger_full and not self._trigger_full_last[i]:
-                controller._delta_position = xr.Vector3f()
+                controller._delta_location = xr.Vector3f()
                 if self.recenter_resets_rotation:
                     controller._delta_orientation = xr.Quaternionf()
                     controller._delta_orientation.w = 1.0
                 self._tracking_active[i] = True
                 ap = xr.Vector3f()
-                ap.x = controller.position.x
-                ap.y = controller.position.y
-                ap.z = controller.position.z
+                ap.x = controller.location.x
+                ap.y = controller.location.y
+                ap.z = controller.location.z
                 self._anchor_position[i] = ap
                 if self.recenter_resets_rotation:
                     aq = xr.Quaternionf()
@@ -248,10 +248,10 @@ class SteamVrBridge:
             if self._tracking_active[i]:
                 ap = self._anchor_position[i]
                 rp = xr.Vector3f()
-                rp.x = controller.position.x - ap.x
-                rp.y = controller.position.y - ap.y
-                rp.z = controller.position.z - ap.z
-                controller._delta_position = rp
+                rp.x = controller.location.x - ap.x
+                rp.y = controller.location.y - ap.y
+                rp.z = controller.location.z - ap.z
+                controller._delta_location = rp
 
                 # q_delta = q_current * q_anchor^{-1}
                 aq = self._anchor_orientation[i]

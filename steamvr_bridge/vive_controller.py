@@ -1,4 +1,3 @@
-import numpy as np
 import xr
 
 from .frame_transform import _vr_to_robotics_position, _vr_to_robotics_orientation
@@ -18,7 +17,7 @@ class ViveController:
         self.path = self.path_array[0]
 
         # controller states
-        self._world_position = xr.Vector3f()
+        self._world_location = xr.Vector3f()
         self._world_orientation = xr.Quaternionf()
         self._menu_button = False
         self._trackpad_x = 0.0
@@ -28,7 +27,7 @@ class ViveController:
         self._grip_button = False
 
         # relative transform (toggled on/off by grip; cleared to zero by grip+trigger)
-        self._delta_position = xr.Vector3f()
+        self._delta_location = xr.Vector3f()
         self._delta_orientation = xr.Quaternionf()
         self._delta_orientation.w = 1.0
 
@@ -188,7 +187,7 @@ class ViveController:
         if space_location.location_flags & xr.SPACE_LOCATION_POSITION_VALID_BIT:
             steamvr_position = space_location.pose.position
             steamvr_orientation = space_location.pose.orientation
-            self._world_position = _vr_to_robotics_position(steamvr_position)
+            self._world_location = _vr_to_robotics_position(steamvr_position)
             self._world_orientation = _vr_to_robotics_orientation(steamvr_orientation)
 
         self._menu_button = xr.get_action_state_boolean(
@@ -217,78 +216,17 @@ class ViveController:
         )
 
     @property
-    def pose(self) -> np.ndarray:
+    def location(self) -> xr.Vector3f:
         """
-        Get the controller pose.
+        Get the controller location in the world frame in meters.
+
+        To get each element of the location, use `location.x`, `location.y`, and `location.z`.
+        To get the location as a numpy array, use `location.as_numpy()`.
 
         Returns:
-            The controller pose as a 7-element numpy array organized as `[x, y, z, qw, qx, qy, qz]`.
+            The controller location as a `Vector3f` struct.
         """
-        pos = self.position.as_numpy()
-        quat = np.array([
-            self.orientation.w,
-            self.orientation.x,
-            self.orientation.y,
-            self.orientation.z,
-        ])
-        return np.concatenate((pos, quat), axis=0)
-
-    @property
-    def relative_pose(self) -> np.ndarray:
-        """
-        Get the relative controller pose delta.  Grip toggles streaming on/off;
-        grip + trigger (fully pressed) resets to identity.
-
-        Returns:
-            A 7-element numpy array organized as ``[x, y, z, qw, qx, qy, qz]``.
-        """
-        pos = np.array([
-            self._delta_position.x,
-            self._delta_position.y,
-            self._delta_position.z,
-        ])
-        quat = np.array([
-            self._delta_orientation.w,
-            self._delta_orientation.x,
-            self._delta_orientation.y,
-            self._delta_orientation.z,
-        ])
-        return np.concatenate((pos, quat), axis=0)
-
-    @property
-    def relative_position(self) -> xr.Vector3f:
-        """
-        Get the relative controller position delta (meters).  Grip toggles streaming
-        on/off; grip + trigger (fully pressed) resets to zero.
-
-        Returns:
-            The relative position as a ``Vector3f`` struct.
-        """
-        return self._delta_position
-
-    @property
-    def relative_orientation(self) -> xr.Quaternionf:
-        """
-        Get the relative controller orientation delta.  Grip toggles streaming
-        on/off; grip + trigger (fully pressed) resets to identity.
-
-        Returns:
-            The relative orientation as a ``Quaternionf`` struct.
-        """
-        return self._delta_orientation
-
-    @property
-    def position(self) -> xr.Vector3f:
-        """
-        Get the controller position in the world frame in meters.
-
-        To get each element of the position, use `position.x`, `position.y`, and `position.z`.
-        To get the position as a numpy array, use `position.as_numpy()`.
-
-        Returns:
-            The controller position as a `Vector3f` struct.
-        """
-        return self._world_position
+        return self._world_location
 
     @property
     def orientation(self) -> xr.Quaternionf:
@@ -306,7 +244,29 @@ class ViveController:
         return self._world_orientation
 
     @property
-    def menu_button(self) -> bool:
+    def relative_location(self) -> xr.Vector3f:
+        """
+        Get the relative controller location delta (meters).  Grip toggles streaming
+        on/off; grip + trigger (fully pressed) resets to zero.
+
+        Returns:
+            The relative location as a ``Vector3f`` struct.
+        """
+        return self._delta_location
+
+    @property
+    def relative_orientation(self) -> xr.Quaternionf:
+        """
+        Get the relative controller orientation delta.  Grip toggles streaming
+        on/off; grip + trigger (fully pressed) resets to identity.
+
+        Returns:
+            The relative orientation as a ``Quaternionf`` struct.
+        """
+        return self._delta_orientation
+
+    @property
+    def menu_button_pressed(self) -> bool:
         """
         Get the state of the menu button.
 
@@ -336,7 +296,7 @@ class ViveController:
         return self._trackpad_y.current_state
 
     @property
-    def trackpad_button(self) -> bool:
+    def trackpad_button_pressed(self) -> bool:
         """
         Get the state of the trackpad button.
 
@@ -356,7 +316,7 @@ class ViveController:
         return self._trigger.current_state
 
     @property
-    def grip_button(self) -> bool:
+    def grip_button_pressed(self) -> bool:
         """
         Get the state of the grip button.
 
