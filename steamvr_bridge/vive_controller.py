@@ -236,7 +236,8 @@ class ViveController:
         To get each element of the orientation, use `orientation.w`, `orientation.x`, `orientation.y`, and
         `orientation.z`.
         To get the orientation as a numpy array, use `orientation.as_numpy()`. Pay special attention that
-        OpenXR uses scalar-last format (`[x, y, z, w]`) for quaternions, which might not be what you want.
+        OpenXR uses scalar-last format (`[x, y, z, w]`) for quaternions.
+        In this repository, quaternion serialization and math convention is scalar-first `(w, x, y, z)`.
 
         Returns:
             The controller orientation as a `Quaternionf` struct.

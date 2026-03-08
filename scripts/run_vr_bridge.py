@@ -39,14 +39,18 @@ if __name__ == "__main__":
             bridge.update()
 
             # update states
+            left_ori = bridge.left_controller.orientation
+            right_ori = bridge.right_controller.orientation
+            rel_left_ori = bridge.left_controller.relative_orientation
+            rel_right_ori = bridge.right_controller.relative_orientation
             states["left"]["location"][:] = bridge.left_controller.location.as_numpy()
-            states["left"]["orientation"][:] = bridge.left_controller.orientation.as_numpy()
+            states["left"]["orientation"][:] = [left_ori.w, left_ori.x, left_ori.y, left_ori.z]
             states["right"]["location"][:] = bridge.right_controller.location.as_numpy()
-            states["right"]["orientation"][:] = bridge.right_controller.orientation.as_numpy()
+            states["right"]["orientation"][:] = [right_ori.w, right_ori.x, right_ori.y, right_ori.z]
             states["left"]["relative_location"][:] = bridge.left_controller.relative_location.as_numpy()
-            states["left"]["relative_orientation"][:] = bridge.left_controller.relative_orientation.as_numpy()
+            states["left"]["relative_orientation"][:] = [rel_left_ori.w, rel_left_ori.x, rel_left_ori.y, rel_left_ori.z]
             states["right"]["relative_location"][:] = bridge.right_controller.relative_location.as_numpy()
-            states["right"]["relative_orientation"][:] = bridge.right_controller.relative_orientation.as_numpy()
+            states["right"]["relative_orientation"][:] = [rel_right_ori.w, rel_right_ori.x, rel_right_ori.y, rel_right_ori.z]
             states["left"]["grip_button_pressed"] = bridge.left_controller.grip_button_pressed
             states["right"]["grip_button_pressed"] = bridge.right_controller.grip_button_pressed
             states["left"]["trigger"] = bridge.left_controller.trigger

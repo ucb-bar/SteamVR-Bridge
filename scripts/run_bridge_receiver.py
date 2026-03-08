@@ -33,13 +33,10 @@ if __name__ == "__main__":
         # Bridge sends lists [x,y,z]; normalize to indexable
         loc_l = rel_loc_l if isinstance(rel_loc_l, (list, tuple)) else [rel_loc_l.x, rel_loc_l.y, rel_loc_l.z]
         loc_r = rel_loc_r if isinstance(rel_loc_r, (list, tuple)) else [rel_loc_r.x, rel_loc_r.y, rel_loc_r.z]
-        rel_ori_l = left["relative_orientation"]
-        rel_ori_r = right["relative_orientation"]
-        # Bridge sends quat as [w, x, y, z]; scipy from_quat expects [x, y, z, w]
-        q_l = rel_ori_l if isinstance(rel_ori_l, (list, tuple)) else [rel_ori_l.w, rel_ori_l.x, rel_ori_l.y, rel_ori_l.z]
-        q_r = rel_ori_r if isinstance(rel_ori_r, (list, tuple)) else [rel_ori_r.w, rel_ori_r.x, rel_ori_r.y, rel_ori_r.z]
-        delta_rpy_l = np.rad2deg(Rotation.from_quat(q_l, scalar_first=True).as_euler("xyz"))
-        delta_rpy_r = np.rad2deg(Rotation.from_quat(q_r, scalar_first=True).as_euler("xyz"))
+        rel_quat_l = left["relative_orientation"]
+        rel_quat_r = right["relative_orientation"]
+        delta_rpy_l = np.rad2deg(Rotation.from_quat(rel_quat_l, scalar_first=True).as_euler("xyz"))
+        delta_rpy_r = np.rad2deg(Rotation.from_quat(rel_quat_r, scalar_first=True).as_euler("xyz"))
         t = time.time() - start_time
 
         print(

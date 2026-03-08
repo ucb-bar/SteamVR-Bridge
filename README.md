@@ -38,7 +38,41 @@ uv sync
 
 ## Setting up VR scene
 
-In SteamVR Room Setup, make sure that the arrow, which represents the Y axis direction, is pointing towards the **left** of the scene.
+In SteamVR Room Setup, make sure that the arrow, which represents the -Z axis direction, is pointing towards the **front** of the scene.
+
+### Frame Conversion
+
+SteamVR/OpenXR and this project use different axis conventions.
+
+- SteamVR/OpenXR tracking frame: `X` right, `Y` up, `-Z` forward
+- Robotics frame: `X` forward, `Y` left, `Z` up (which maps well to roll-pitch-yaw)
+
+The bridge converts all tracked poses (HMD and controllers) into the robotics frame before exposing them.
+
+Position conversion:
+
+```text
+x_robot = -z_vr
+y_robot = -x_vr
+z_robot =  y_vr
+```
+
+Orientation conversion (quaternion in `(w, x, y, z)`):
+
+```text
+q_robot = q_R * q_vr * q_R^-1
+q_R = (0.5, 0.5, -0.5, -0.5)
+```
+
+`q_vr` is the OpenXR pose orientation (device-local -> SteamVR world). The bridge performs a full basis change into the robotics frame.
+
+Quaternion format convention in this repository:
+
+- Canonical order is always `(w, x, y, z)`.
+- UDP payloads from `run_vr_bridge.py` use `(w, x, y, z)`.
+- If using scipy `Rotation.from_quat`, pass `scalar_first=True` when providing bridge quaternions.
+
+So `location`, `orientation`, `relative_location`, and `relative_orientation` from the bridge are all in the robotics frame.
 
 
 ## Running the script
@@ -61,7 +95,7 @@ Each VIVE controller exposes a **relative pose** (position + orientation delta) 
 | Action | Result |
 |--------|--------|
 | **Grip** (press / release) | Toggle between *Following* and *Hold* modes. In Following mode, the relative pose updates every frame as the controller moves. In Hold mode, the relative pose stays fixed at its last value. |
-| **Grip + Trigger** (both held, trigger fully pressed) | Reset translation to zero and enter Following mode. By default, orientation is left unchanged; pass `recenter_resets_rotation=True` to `SteamVrBridge()` to also reset orientation. |
+| **Grip + Trigger** (both held, trigger fully pressed) | Reset delta location and rotation to zero and enter Following mode. |
 
 The grip acts as a toggle on each press; grip+trigger always recenters translation and enables Following mode, regardless of the current mode.
 

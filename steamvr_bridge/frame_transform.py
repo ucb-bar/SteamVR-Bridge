@@ -32,7 +32,15 @@ def _vr_to_robotics_position(pos):
 
 
 def _vr_to_robotics_orientation(quat):
-    """Convert orientation from SteamVR frame to robotics frame via similarity transform q_R * q_vr * q_R^{-1}."""
+    """
+    Convert pose orientation from SteamVR world frame to robotics world frame.
+
+    OpenXR pose orientation maps vectors from local device frame into the tracking world frame.
+    To express that same pose in robotics coordinates, both world and local basis vectors are
+    represented in the robotics frame:
+        q_robot = q_R * q_vr * q_R^-1
+    where q_R maps SteamVR/OpenXR axes into robotics axes.
+    """
     q_vr = (quat.w, quat.x, quat.y, quat.z)
     w, x, y, z = _quat_multiply(
         _VR_TO_ROBOTICS_QUAT,

@@ -21,13 +21,13 @@ class SteamVrBridge:
     """
     This class creates a headless OpenXR extension that communicates with SteamVR and retrieves
     the state of the headset and controllers.
+
+    Frame convention used by this bridge:
+    - OpenXR/SteamVR tracking is converted into a robotics frame once per update.
+    - Public poses (`hmd`, controller `location`, controller `orientation`, and relative deltas)
+      are all expressed in the robotics frame.
     """
-    def __init__(self, *, recenter_resets_rotation: bool = False):
-        """
-        Args:
-            recenter_resets_rotation: If True, grip+trigger recenter resets both translation
-                and orientation. If False (default), only translation is reset.
-        """
+    def __init__(self):
         # enumerate the required instance extensions
         extensions = [xr.MND_HEADLESS_EXTENSION_NAME]  # Permits use without a graphics display
 
@@ -113,8 +113,6 @@ class SteamVrBridge:
             ),
         )
 
-        self.recenter_resets_rotation = recenter_resets_rotation
-
         # initialize the session state
         self.session_state = xr.SessionState.UNKNOWN
 
@@ -122,7 +120,8 @@ class SteamVrBridge:
         self._hmd_position = xr.Vector3f()
         self._hmd_orientation = xr.Quaternionf()
 
-        # relative-transform tracking (one entry per controller)
+        # Relative-transform tracking state (one entry per controller).
+        # All values below are in the robotics frame.
         self._grip_last = [False] * len(self.controllers)
         self._trigger_full_last = [False] * len(self.controllers)
         self._tracking_active = [False] * len(self.controllers)
@@ -191,7 +190,8 @@ class SteamVrBridge:
             self._hmd_position = _vr_to_robotics_position(steamvr_position)
             self._hmd_orientation = _vr_to_robotics_orientation(steamvr_orientation)
 
-        # update the controller states, convert to robotics frame, and compute relative transforms
+        # Update controller states and relative transforms.
+        # controller.location/orientation are already converted to the robotics frame in ViveController.update().
         for i, controller in enumerate(self.controllers):
             controller.update(self.session, xr_time_now)
 
@@ -210,7 +210,9 @@ class SteamVrBridge:
                     ap.z = controller.location.z - prev_rp.z
                     self._anchor_position[i] = ap
 
-                    # q_anchor = q_prev_delta^{-1} * q_current
+                    # Preserve the existing relative rotation when toggling tracking on:
+                    # q_delta = q_current * q_anchor^{-1}
+                    # => q_anchor = q_delta^{-1} * q_current
                     prev_rq = controller.relative_orientation
                     aw, ax, ay, az = _quat_multiply(
                         (prev_rq.w, -prev_rq.x, -prev_rq.y, -prev_rq.z),
@@ -227,22 +229,20 @@ class SteamVrBridge:
             # Grip held + trigger reaches 1.0: clear delta and force tracking on
             if grip and trigger_full and not self._trigger_full_last[i]:
                 controller._delta_location = xr.Vector3f()
-                if self.recenter_resets_rotation:
-                    controller._delta_orientation = xr.Quaternionf()
-                    controller._delta_orientation.w = 1.0
+                controller._delta_orientation = xr.Quaternionf()
+                controller._delta_orientation.w = 1.0
                 self._tracking_active[i] = True
                 ap = xr.Vector3f()
                 ap.x = controller.location.x
                 ap.y = controller.location.y
                 ap.z = controller.location.z
                 self._anchor_position[i] = ap
-                if self.recenter_resets_rotation:
-                    aq = xr.Quaternionf()
-                    aq.w = controller.orientation.w
-                    aq.x = controller.orientation.x
-                    aq.y = controller.orientation.y
-                    aq.z = controller.orientation.z
-                    self._anchor_orientation[i] = aq
+                aq = xr.Quaternionf()
+                aq.w = controller.orientation.w
+                aq.x = controller.orientation.x
+                aq.y = controller.orientation.y
+                aq.z = controller.orientation.z
+                self._anchor_orientation[i] = aq
 
             # Continuously compute delta while tracking is active
             if self._tracking_active[i]:
@@ -253,7 +253,8 @@ class SteamVrBridge:
                 rp.z = controller.location.z - ap.z
                 controller._delta_location = rp
 
-                # q_delta = q_current * q_anchor^{-1}
+                # Relative rotation from the anchor frame to the current frame.
+                # Quaternion convention is Hamilton product in (w, x, y, z).
                 aq = self._anchor_orientation[i]
                 w, x, y, z = _quat_multiply(
                     (controller.orientation.w, controller.orientation.x,
