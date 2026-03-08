@@ -3,6 +3,7 @@ Simple receiver script that receives controller state dicts from run_vr_bridge.p
 Run this on the machine that should receive VR controller data (the bridge sends to recv_addr).
 """
 import time
+import pickle
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -19,38 +20,33 @@ if __name__ == "__main__":
     start_time = time.time()
 
     while True:
-        controller_states = udp.recv_dict(timeout=1.0)
+        buffer = udp.recv(bufsize=4096, timeout=1.0)
+        controller_states = pickle.loads(buffer)
         if controller_states is None:
             continue
 
-        left = controller_states.get("left", {})
-        right = controller_states.get("right", {})
+        left = controller_states["left"]
+        right = controller_states["right"]
 
-        loc_l = left.get("location", [0, 0, 0])
-        loc_r = right.get("location", [0, 0, 0])
-        trig_l = left.get("trigger", 0)
-        trig_r = right.get("trigger", 0)
-        grip_l = left.get("button_pressed", False)
-        grip_r = right.get("button_pressed", False)
-        rel_loc_l = left.get("relative_location", [0, 0, 0])
-        rel_loc_r = right.get("relative_location", [0, 0, 0])
-        ori_l = left.get("orientation", [1, 0, 0, 0])
-        ori_r = right.get("orientation", [1, 0, 0, 0])
-        rpy_l = np.rad2deg(
-            Rotation.from_quat([ori_l.x, ori_l.y, ori_l.z, ori_l.w]).as_euler("xyz")
-        )
-        rpy_r = np.rad2deg(
-            Rotation.from_quat([ori_r.x, ori_r.y, ori_r.z, ori_r.w]).as_euler("xyz")
-        )
+        rel_loc_l = left["relative_location"]
+        rel_loc_r = right["relative_location"]
+        # Bridge sends lists [x,y,z]; normalize to indexable
+        loc_l = rel_loc_l if isinstance(rel_loc_l, (list, tuple)) else [rel_loc_l.x, rel_loc_l.y, rel_loc_l.z]
+        loc_r = rel_loc_r if isinstance(rel_loc_r, (list, tuple)) else [rel_loc_r.x, rel_loc_r.y, rel_loc_r.z]
+        rel_ori_l = left["relative_orientation"]
+        rel_ori_r = right["relative_orientation"]
+        # Bridge sends quat as [w, x, y, z]; scipy from_quat expects [x, y, z, w]
+        q_l = rel_ori_l if isinstance(rel_ori_l, (list, tuple)) else [rel_ori_l.w, rel_ori_l.x, rel_ori_l.y, rel_ori_l.z]
+        q_r = rel_ori_r if isinstance(rel_ori_r, (list, tuple)) else [rel_ori_r.w, rel_ori_r.x, rel_ori_r.y, rel_ori_r.z]
+        delta_rpy_l = np.rad2deg(Rotation.from_quat(q_l, scalar_first=True).as_euler("xyz"))
+        delta_rpy_r = np.rad2deg(Rotation.from_quat(q_r, scalar_first=True).as_euler("xyz"))
         t = time.time() - start_time
 
         print(
             f"[{t:.3f}] "
-            f"L: pos=({loc_l.x:5.2f}, {loc_l.y:5.2f}, {loc_l.z:5.2f}) "
-            f"rpy=({rpy_l[0]:4.0f}, {rpy_l[1]:4.0f}, {rpy_l[2]:4.0f})° "
-            f"Δ=({rel_loc_l.x:5.2f}, {rel_loc_l.y:5.2f}, {rel_loc_l.z:5.2f}) grip={'●' if grip_l else '○'} trig={trig_l:.2f} ({'●' if trig_l == 1.0 else '○'}) | "
-            f"R: pos=({loc_r.x:5.2f}, {loc_r.y:5.2f}, {loc_r.z:5.2f}) "
-            f"rpy=({rpy_r[0]:4.0f}, {rpy_r[1]:4.0f}, {rpy_r[2]:4.0f})° "
-            f"Δ=({rel_loc_r.x:5.2f}, {rel_loc_r.y:5.2f}, {rel_loc_r.z:5.2f}) grip={'●' if grip_r else '○'} trig={trig_r:.2f} ({'●' if trig_r == 1.0 else '○'})",
+            f"L: Δpos=({loc_l[0]:5.2f}, {loc_l[1]:5.2f}, {loc_l[2]:5.2f}) "
+            f"Δrpy=({delta_rpy_l[0]:5.2f}, {delta_rpy_l[1]:5.2f}, {delta_rpy_l[2]:5.2f})° | "
+            f"R: Δpos=({loc_r[0]:5.2f}, {loc_r[1]:5.2f}, {loc_r[2]:5.2f}) "
+            f"Δrpy=({delta_rpy_r[0]:5.2f}, {delta_rpy_r[1]:5.2f}, {delta_rpy_r[2]:5.2f})°",
             flush=True,
         )
