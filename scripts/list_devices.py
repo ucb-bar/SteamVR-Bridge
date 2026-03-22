@@ -13,6 +13,12 @@ import xr
 from steamvr_bridge import SteamVrBridge
 
 
+def _device_tracked(device) -> bool:
+    return getattr(device, "pose_valid", False) or any(
+        getattr(device.location, axis) != 0 for axis in ("x", "y", "z")
+    )
+
+
 def _enumerate_devices(bridge) -> list[tuple[str, str, str | None, str]]:
     """Enumerate all input sources bound to pose actions. Returns (name, status, extra, side)."""
     devices: list[tuple[str, str, str | None, str]] = []
@@ -50,8 +56,14 @@ def _enumerate_devices(bridge) -> list[tuple[str, str, str | None, str]]:
         except Exception:
             pass
 
-    add_from_action(bridge.left_controller.pose_action, "Left Controller", "left")
-    add_from_action(bridge.right_controller.pose_action, "Right Controller", "right")
+    for controller in bridge.controllers:
+        add_from_action(controller.pose_action, f"{controller.name} Controller", controller.state_key)
+    for tracker in bridge.trackers:
+        add_from_action(
+            tracker.pose_action,
+            f"Tracker ({tracker.role})",
+            tracker.state_key,
+        )
 
     return devices
 
@@ -66,24 +78,25 @@ def _check_tracking(
     hmd_tracked = any(getattr(bridge._hmd_position, c) != 0 for c in ("x", "y", "z"))
     result.append(("Headset (HMD)", "Tracked" if hmd_tracked else "Present", None))
 
-    def _safe_trigger(ctrl) -> float:
-        t = getattr(ctrl, "_trigger", 0.0)
+    def _safe_trigger(device) -> float:
+        t = getattr(device, "_trigger", 0.0)
         return getattr(t, "current_state", t) if not isinstance(t, (int, float)) else float(t)
 
-    left = bridge.left_controller
-    right = bridge.right_controller
-    left_tracked = any(getattr(left._position, c) != 0 for c in ("x", "y", "z"))
-    right_tracked = any(getattr(right._position, c) != 0 for c in ("x", "y", "z"))
+    device_lookup = {
+        device.state_key: device
+        for device in bridge.tracked_devices
+    }
 
-    for name, _status, _extra, side in devices:
-        if side == "left":
-            new_status = "Tracked" if left_tracked else "Not tracked"
-            result.append((name, new_status, f"trigger={_safe_trigger(left):.2f}"))
-        elif side == "right":
-            new_status = "Tracked" if right_tracked else "Not tracked"
-            result.append((name, new_status, f"trigger={_safe_trigger(right):.2f}"))
-        else:
+    for name, _status, _extra, state_key in devices:
+        device = device_lookup.get(state_key)
+        if device is None:
             result.append((name, _status, _extra))
+        elif device.kind == "controller":
+            new_status = "Tracked" if _device_tracked(device) else "Not tracked"
+            result.append((name, new_status, f"trigger={_safe_trigger(device):.2f}"))
+        else:
+            new_status = "Tracked" if _device_tracked(device) else "Not tracked"
+            result.append((name, new_status, f"role={device.role}"))
 
     return result
 
@@ -129,10 +142,25 @@ def main() -> int:
 
     # If enumeration returned nothing, fall back to known controllers
     if not enumerated:
-        enumerated = [
-            ("Left Controller", "Connected", None, "left"),
-            ("Right Controller", "Connected", None, "right"),
-        ]
+        enumerated = []
+        enumerated.extend(
+            (
+                f"{controller.name} Controller",
+                "Connected",
+                None,
+                controller.state_key,
+            )
+            for controller in bridge.controllers
+        )
+        enumerated.extend(
+            (
+                f"Tracker ({tracker.role})",
+                "Connected",
+                None,
+                tracker.state_key,
+            )
+            for tracker in bridge.trackers
+        )
 
     while True:
         bridge.update()

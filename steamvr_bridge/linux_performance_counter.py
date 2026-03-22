@@ -3,6 +3,8 @@ import time
 
 import xr
 
+from ._openxr_utils import check_raw_result
+
 
 class LinuxPerformanceCounter:
     """
@@ -26,7 +28,7 @@ class LinuxPerformanceCounter:
             ctypes.pointer(timespec_time),
             ctypes.byref(xr_time),
         )
-        result = xr.check_result(result)
+        result = check_raw_result(result)
         if result.is_exception():
             raise result
         return xr_time
@@ -36,4 +38,3 @@ class LinuxPerformanceCounter:
         self.timespec_time.tv_sec = int(time_float)
         self.timespec_time.tv_nsec = int((time_float % 1) * 1e9)
         return self.time_from_timespec(self.timespec_time)
-

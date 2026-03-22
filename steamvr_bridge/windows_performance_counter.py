@@ -2,6 +2,8 @@ import ctypes.wintypes
 
 import xr
 
+from ._openxr_utils import check_raw_result
+
 
 class WindowsPerformanceCounter:
     """
@@ -26,11 +28,11 @@ class WindowsPerformanceCounter:
             ctypes.pointer(performance_counter),
             ctypes.byref(xr_time),
         )
-        result = xr.check_result(result)
+        result = check_raw_result(result)
         if result.is_exception():
             raise result
         return xr_time
 
     def get(self):
         self.kernel32.QueryPerformanceCounter(ctypes.byref(self.pc_time))
-        return self.time_from_perf_counter(self.instance, self.pc_time)
+        return self.time_from_perf_counter(self.pc_time)

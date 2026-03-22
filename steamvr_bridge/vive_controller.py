@@ -10,15 +10,21 @@ class ViveController:
     For more information, please refer to the VIVE Controller (2018) product documentation:
     https://www.vive.com/us/support/vive-pro2/category_howto/about-the-controllers---2018.html
     """
-    def __init__(self, instance: xr.Instance, name: str, path: str):
+    def __init__(self, instance: xr.Instance, name: str, path: str, state_key: str | None = None):
         self.instance = instance
         self.name = name
+        self.state_key = state_key or name.lower()
+        self.kind = "controller"
+        self.interaction_profile_path = "/interaction_profiles/htc/vive_controller"
+        self.tracking_starts_active = False
+        self.user_path_string = path
         self.path_array = (xr.Path * 1)(xr.string_to_path(instance, path), )
         self.path = self.path_array[0]
 
         # controller states
         self._world_location = xr.Vector3f()
         self._world_orientation = xr.Quaternionf()
+        self._pose_valid = False
         self._menu_button = False
         self._trackpad_x = 0.0
         self._trackpad_y = 0.0
@@ -30,6 +36,8 @@ class ViveController:
         self._delta_location = xr.Vector3f()
         self._delta_orientation = xr.Quaternionf()
         self._delta_orientation.w = 1.0
+        self.reference_space = None
+        self.action_space = None
 
     def register(self, action_set: xr.ActionSet, session: xr.Session):
         name_lower = f"{self.name.lower()}"
@@ -189,6 +197,9 @@ class ViveController:
             steamvr_orientation = space_location.pose.orientation
             self._world_location = _vr_to_robotics_position(steamvr_position)
             self._world_orientation = _vr_to_robotics_orientation(steamvr_orientation)
+            self._pose_valid = True
+        else:
+            self._pose_valid = False
 
         self._menu_button = xr.get_action_state_boolean(
             session=session,
@@ -243,6 +254,11 @@ class ViveController:
             The controller orientation as a `Quaternionf` struct.
         """
         return self._world_orientation
+
+    @property
+    def pose_valid(self) -> bool:
+        """Return whether the most recent pose sample was valid."""
+        return self._pose_valid
 
     @property
     def relative_location(self) -> xr.Vector3f:
