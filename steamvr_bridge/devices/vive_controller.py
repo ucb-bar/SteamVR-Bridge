@@ -1,11 +1,25 @@
+from enum import Enum
+
 import openvr
+from mathutils import Matrix, Vector
 
-from mathutils import Vector, Quaternion
-
-from ..transform import steamvr_to_standard_frame_transform
+from .vive_device import DeviceIdentity, ViveDevice
 
 
-class ViveController:
+def _button_mask(button_id: int) -> int:
+    return 1 << button_id
+
+
+class ViveControllerRole(Enum):
+    INVALID = "invalid"
+    LEFT = "left"
+    RIGHT = "right"
+    OPT_OUT = "opt_out"
+    TREADMILL = "treadmill"
+    STYLUS = "stylus"
+
+
+class ViveController(ViveDevice):
     """
     A class representing the VIVE Controller (2018).
 
@@ -13,22 +27,15 @@ class ViveController:
     https://www.vive.com/us/support/vive-pro2/category_howto/about-the-controllers---2018.html
 
     Args:
-        instance: The OpenVR instance.
-        name: The name of the controller.
-        role: The role of the controller, either "left" or "right".
+        vr_system: The OpenVR system handle.
+        identity: User-facing device metadata.
     """
-    def __init__(
-        self,
-        instance: xr.Instance,
-        name: str,
-        role: str,
-    ):
-        self.instance = instance
-        self.name = name
-        self.role = role
+    device_to_local_transform = Matrix.Translation(Vector((0.0, -0.025, -0.025)))
 
-        self._location = Vector()
-        self._orientation = Quaternion()
+    def __init__(self, vr_system: openvr.IVRSystem, identity: DeviceIdentity):
+        super().__init__(vr_system=vr_system, identity=identity)
+        self._trackpad_axis_index = self._find_axis_index(openvr.k_eControllerAxis_TrackPad, fallback=0)
+        self._trigger_axis_index = self._find_axis_index(openvr.k_eControllerAxis_Trigger, fallback=1)
         self._menu_button = False
         self._trackpad_x = 0.0
         self._trackpad_y = 0.0
@@ -36,32 +43,54 @@ class ViveController:
         self._trigger = 0.0
         self._grip_button = False
 
-    def update(self, session: xr.Session, xr_time_now: xr.Time):
-        steamvr_location = # TODO: receive update
-        steamvr_orientation = # TODO: receive update
-        self._location = steamvr_to_standard_frame_transform(steamvr_location)
-        self._orientation = steamvr_to_standard_frame_transform(steamvr_orientation)
+    def _find_axis_index(self, axis_type: int, fallback: int) -> int:
+        if self.vr_system is None:
+            return fallback
 
+        for axis_index in range(5):
+            prop_name = f"Prop_Axis{axis_index}Type_Int32"
+            prop = getattr(openvr, prop_name, None)
+            if prop is None:
+                continue
 
-    @property
-    def location(self) -> Vector:
-        """
-        Get the location of the controller.
+            try:
+                if self.vr_system.getInt32TrackedDeviceProperty(self.device_index, prop) == axis_type:
+                    return axis_index
+            except openvr.OpenVRError:
+                continue
 
-        Returns:
-            The location of the controller in world frame, in meters.
-        """
-        return self._location
+        return fallback
 
-    @property
-    def orientation(self) -> Quaternion:
-        """
-        Get the orientation of the controller.
+    def update(
+        self,
+        pose: openvr.TrackedDevicePose_t,
+        controller_state: openvr.VRControllerState_t | None = None,
+    ):
+        super().update(pose)
 
-        Returns:
-            The orientation of the controller in world frame.
-        """
-        return self._orientation
+        if controller_state is None:
+            self._menu_button = False
+            self._trackpad_x = 0.0
+            self._trackpad_y = 0.0
+            self._trackpad_button = False
+            self._trigger = 0.0
+            self._grip_button = False
+            return
+
+        self._menu_button = bool(
+            controller_state.ulButtonPressed & _button_mask(openvr.k_EButton_ApplicationMenu)
+        )
+        self._trackpad_button = bool(
+            controller_state.ulButtonPressed & _button_mask(openvr.k_EButton_SteamVR_Touchpad)
+        )
+        self._grip_button = bool(controller_state.ulButtonPressed & _button_mask(openvr.k_EButton_Grip))
+
+        trackpad_axis = controller_state.rAxis[self._trackpad_axis_index]
+        trigger_axis = controller_state.rAxis[self._trigger_axis_index]
+
+        self._trackpad_x = float(trackpad_axis.x)
+        self._trackpad_y = float(trackpad_axis.y)
+        self._trigger = float(trigger_axis.x)
 
     @property
     def menu_button(self) -> bool:
@@ -71,7 +100,7 @@ class ViveController:
         Returns:
             The state of the menu button as a boolean.
         """
-        return self._menu_button.current_state
+        return self._menu_button
 
     @property
     def trackpad_x(self) -> float:
@@ -81,7 +110,7 @@ class ViveController:
         Returns:
             The state of the trackpad x axis as a float.
         """
-        return self._trackpad_x.current_state
+        return self._trackpad_x
 
     @property
     def trackpad_y(self) -> float:
@@ -91,7 +120,7 @@ class ViveController:
         Returns:
             The state of the trackpad y axis as a float.
         """
-        return self._trackpad_y.current_state
+        return self._trackpad_y
 
     @property
     def trackpad_button(self) -> bool:
@@ -101,7 +130,7 @@ class ViveController:
         Returns:
             The state of the trackpad button as a boolean.
         """
-        return self._trackpad_button.current_state
+        return self._trackpad_button
 
     @property
     def trigger(self) -> float:
@@ -111,7 +140,7 @@ class ViveController:
         Returns:
             The state of the trigger as a float.
         """
-        return self._trigger.current_state
+        return self._trigger
 
     @property
     def grip_button(self) -> bool:
@@ -121,4 +150,4 @@ class ViveController:
         Returns:
             The state of the grip button as a boolean.
         """
-        return self._grip_button.current_state
+        return self._grip_button

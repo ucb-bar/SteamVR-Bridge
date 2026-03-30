@@ -9,7 +9,10 @@ dependencies = [
     "numpy",
     "scipy",
     "udpack",
-    "pyopenxr",
+    "loop-rate-limiters",
+    "mathutils==3.3.0",
+    "openvr",
+    "rerun-sdk",
 ]
 
 [build-system]

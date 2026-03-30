@@ -1,55 +1,62 @@
+from enum import Enum
+import math
+
 import openvr
+from mathutils import Matrix
 
-from mathutils import Vector, Quaternion
-
-from ..transform import steamvr_to_standard_frame_transform
+from .vive_device import DeviceIdentity, ViveDevice
 
 
-class ViveTracker:
+class ViveTrackerRole(Enum):
+    HELD_IN_HAND = "vive_tracker_held_in_hand"
+    LEFT_FOOT = "vive_tracker_left_foot"
+    RIGHT_FOOT = "vive_tracker_right_foot"
+    LEFT_SHOULDER = "vive_tracker_left_shoulder"
+    RIGHT_SHOULDER = "vive_tracker_right_shoulder"
+    LEFT_ELBOW = "vive_tracker_left_elbow"
+    RIGHT_ELBOW = "vive_tracker_right_elbow"
+    LEFT_KNEE = "vive_tracker_left_knee"
+    RIGHT_KNEE = "vive_tracker_right_knee"
+    LEFT_WRIST = "vive_tracker_left_wrist"
+    RIGHT_WRIST = "vive_tracker_right_wrist"
+    LEFT_ANKLE = "vive_tracker_left_ankle"
+    RIGHT_ANKLE = "vive_tracker_right_ankle"
+    WAIST = "vive_tracker_waist"
+    CHEST = "vive_tracker_chest"
+    CAMERA = "vive_tracker_camera"
+    KEYBOARD = "vive_tracker_keyboard"
+
+
+class ViveTracker(ViveDevice):
     """
     A class representing the VIVE Tracker 2.0 or 3.0.
 
     Args:
-        instance: The OpenVR instance.
-        name: The name of the tracker.
-        role: The role of the tracker.
+        vr_system: The OpenVR system handle.
+        identity: User-facing device metadata.
     """
-    def __init__(
-        self,
-        instance: xr.Instance,
-        name: str,
-        role: str,
-    ):
-        self.instance = instance
-        self.name = name
-        self.role = role
+    device_to_local_transform = (
+        Matrix.Rotation(math.pi, 4, "Y") @ Matrix.Rotation(math.pi / 2.0, 4, "Z")
+    )
 
-        self._location = Vector()
-        self._orientation = Quaternion()
+    def __init__(self, vr_system: openvr.IVRSystem, identity: DeviceIdentity):
+        super().__init__(vr_system=vr_system, identity=identity)
 
-    def update(self, session: xr.Session, xr_time_now: xr.Time):
-        steamvr_location = # TODO: receive update
-        steamvr_orientation = # TODO: receive update
-        self._location = steamvr_to_standard_frame_transform(steamvr_location)
-        self._orientation = steamvr_to_standard_frame_transform(steamvr_orientation)
+    @staticmethod
+    def tracker_role_name(tracker_role: ViveTrackerRole) -> str:
+        return tracker_role.value.removeprefix("vive_tracker_")
 
+    @staticmethod
+    def tracker_role_from_controller_type(controller_type: str) -> ViveTrackerRole | None:
+        try:
+            return ViveTrackerRole(controller_type)
+        except ValueError:
+            return None
 
-    @property
-    def location(self) -> Vector:
-        """
-        Get the location of the tracker.
-
-        Returns:
-            The location of the tracker in world frame, in meters.
-        """
-        return self._location
-
-    @property
-    def orientation(self) -> Quaternion:
-        """
-        Get the orientation of the tracker.
-
-        Returns:
-            The orientation of the tracker in world frame.
-        """
-        return self._orientation
+    @staticmethod
+    def tracker_role_from_steamvr_role(steamvr_role: str) -> ViveTrackerRole | None:
+        for role in ViveTrackerRole:
+            suffix = "".join(part.title() for part in role.name.split("_"))
+            if steamvr_role == f"TrackerRole_{suffix}":
+                return role
+        return None

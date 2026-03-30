@@ -41,17 +41,29 @@ uv sync
 In SteamVR Room Setup, make sure that the arrow, which represents the Y axis direction, is pointing towards the **left** of the scene.
 
 
-## Running the script
+## Running the scripts
 
 1. Launch SteamVR application. Make sure the headset and VR controllers can be seen by the base station.
 
-2. Run `run_vr_bridge.py`:
+2. Inspect the currently connected tracked devices:
 
-```powershell
-uv run ./scripts/run_vr_bridge.py
+```bash
+uv run ./scripts/list_devices.py
 ```
 
-3. Check if the VR controllers are tracked by pressing triggers. The console log should show changing values.
+3. Stream all detected tracked devices over UDP:
+
+```bash
+uv run ./scripts/stream.py --host 127.0.0.1 --port 5000
+```
+
+4. Visualize all detected tracked devices locally:
+
+```bash
+uv run ./scripts/visualize.py --rate 100
+```
+
+The session auto-discovers all connected HMDs, controllers, and trackers. Device lookup is based on SteamVR metadata, including `role` and `name`.
 
 
 ## Citation
@@ -141,3 +153,8 @@ Example output:
 ```
 
 You should see NVIDIA listed.
+
+
+## Attribution
+
+"Valve Index Lighthouse/Basestation gen2" (https://skfb.ly/6WUwA) by F53 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
