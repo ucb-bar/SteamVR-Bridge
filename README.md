@@ -55,6 +55,29 @@ SteamVR Bridge converts raw SteamVR poses into a standard robotics frame:
 - `+Y` left
 - `+Z` up
 
+The coordinate frames of the SteamVR devices are defined as follows:
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/19e4d02b-abd5-4c4a-b4a2-329967ce4052" height="200"/><br/>
+      Vive Controller
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/acc924cd-9e4d-436f-92c6-fc964866aefa" height="200"/><br/>
+      Vive Tracker
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/d8942896-b0bf-4875-a0f4-538e3c653598" height="200"/><br/>
+      Vive Base Station
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/dd404d9a-a932-417a-9247-3e5914539dd1" height="200"/><br/>
+      Vive Pro HMD
+    </td>
+  </tr>
+</table>
+
 Note that the SteamVR standing-space origin and heading still come from SteamVR Room Setup. If you re-run Room Setup, the reported world frame can change accordingly.
 
 ## Device Discovery And Roles
