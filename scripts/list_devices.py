@@ -13,7 +13,8 @@ if __name__ == "__main__":
             print(
                 f"name={device.name:16s} "
                 f"kind={device.kind:16s} "
-                f"role={device.role:16s}"
+                f"role={device.role:16s} "
+                f"model_number={device.model_number:16s}"
             )
     finally:
         session.stop()

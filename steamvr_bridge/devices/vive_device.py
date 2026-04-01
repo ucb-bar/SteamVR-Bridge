@@ -18,10 +18,15 @@ from ..transform import (
 @dataclass
 class DeviceIdentity:
     index: int
+    """The device index in the OpenVR system."""
     kind: str
+    """The type of device, whether it's a head-mounted display (HMD), controller, tracker, base station, etc."""
     name: str
+    """The device serial number."""
     role: str
+    """The device role assigned in SteamVR."""
     model_number: str
+    """The device model number."""
 
 
 class ViveDevice:
