@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from mathutils import Quaternion, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 try:
     import rerun as rr
@@ -22,6 +22,7 @@ class RerunVisualizer:
             )
 
         self.config = config
+        self._logged_model_paths: set[str] = set()
         rr.init(config.app_name, spawn=config.spawn)
         rr.log("world", rr.ViewCoordinates.FLU, static=True)
 
@@ -37,6 +38,8 @@ class RerunVisualizer:
             return [240, 160, 60, 255]
         if kind == "hmd":
             return [70, 140, 255, 255]
+        if kind == "base_station":
+            return [230, 230, 120, 255]
         return [220, 220, 220, 255]
 
     @staticmethod
@@ -47,6 +50,30 @@ class RerunVisualizer:
             Vector((0.0, 0.0, axis_length)),
         )
         return [list(axis) for axis in basis]
+
+    @staticmethod
+    def _device_model_transform(device) -> Matrix:
+        return device.device_to_local_transform.inverted()
+
+    def _log_device_model(self, device, device_path: str):
+        asset_path = device.visualization_asset_path()
+        if asset_path is None or not asset_path.exists():
+            return
+
+        model_path = f"{device_path}/model"
+        if model_path not in self._logged_model_paths:
+            rr.log(model_path, rr.Asset3D(path=asset_path), static=True)
+            self._logged_model_paths.add(model_path)
+
+        model_transform = self._device_model_transform(device)
+        rr.log(
+            model_path,
+            rr.Transform3D(
+                translation=list(model_transform.to_translation()),
+                # quaternion=rr.Quaternion(xyzw=self._xyzw(model_transform.to_quaternion())),
+            ),
+            static=True,
+        )
 
     def _log_world_axes(self):
         rr.log(
@@ -78,6 +105,7 @@ class RerunVisualizer:
                     quaternion=rr.Quaternion(xyzw=self._xyzw(device.orientation)),
                 ),
             )
+            self._log_device_model(device, device_path)
             rr.log(
                 f"{device_path}/marker",
                 rr.Points3D(

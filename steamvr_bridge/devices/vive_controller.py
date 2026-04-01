@@ -31,6 +31,7 @@ class ViveController(ViveDevice):
         identity: User-facing device metadata.
     """
     device_to_local_transform = Matrix.Translation(Vector((0.0, -0.025, -0.025)))
+    visualization_asset_filename = "ObjModelViveController.obj"
 
     def __init__(self, vr_system: openvr.IVRSystem, identity: DeviceIdentity):
         super().__init__(vr_system=vr_system, identity=identity)

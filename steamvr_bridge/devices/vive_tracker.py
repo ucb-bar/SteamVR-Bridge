@@ -36,8 +36,9 @@ class ViveTracker(ViveDevice):
         identity: User-facing device metadata.
     """
     device_to_local_transform = (
-        Matrix.Rotation(math.pi, 4, "Y") @ Matrix.Rotation(math.pi / 2.0, 4, "Z")
+        Matrix.Rotation(math.pi / 2.0, 4, "X") @ Matrix.Rotation(math.pi, 4, "Z")
     )
+    visualization_asset_filename = "ObjModelViveTracker3.obj"
 
     def __init__(self, vr_system: openvr.IVRSystem, identity: DeviceIdentity):
         super().__init__(vr_system=vr_system, identity=identity)

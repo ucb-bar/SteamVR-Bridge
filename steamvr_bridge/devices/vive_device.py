@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import openvr
 from mathutils import Matrix, Quaternion, Vector
@@ -33,6 +34,7 @@ class ViveDevice:
     """
 
     device_to_local_transform = Matrix.Identity(4)
+    visualization_asset_filename: str | None = None
 
     def __init__(self, vr_system: openvr.IVRSystem, identity: DeviceIdentity):
         self.vr_system = vr_system
@@ -48,6 +50,12 @@ class ViveDevice:
     @property
     def device_index(self) -> int:
         return self.identity.index
+
+    @classmethod
+    def visualization_asset_path(cls) -> Path | None:
+        if cls.visualization_asset_filename is None:
+            return None
+        return Path(__file__).resolve().parents[2] / "assets" / cls.visualization_asset_filename
 
     def refresh_identity(self, identity: DeviceIdentity):
         self.identity = identity

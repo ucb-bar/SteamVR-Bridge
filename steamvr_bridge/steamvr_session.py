@@ -10,6 +10,7 @@ import openvr
 
 from .devices import (
     DeviceIdentity,
+    ViveBaseStation,
     ViveController,
     ViveControllerRole,
     ViveHmd,
@@ -18,7 +19,7 @@ from .devices import (
 )
 from .visualization import RerunVisualizer, RerunVisualizerConfig
 
-TrackedDevice = ViveHmd | ViveController | ViveTracker
+TrackedDevice = ViveBaseStation | ViveHmd | ViveController | ViveTracker
 
 
 class SteamVrSession:
@@ -213,9 +214,20 @@ class SteamVrSession:
                 model_number=model_number,
             )
 
+        if device_class == openvr.TrackedDeviceClass_TrackingReference:
+            return DeviceIdentity(
+                index=device_index,
+                kind="base_station",
+                name=serial_number,
+                role="base_station",
+                model_number=model_number,
+            )
+
         return None
 
     def _instantiate_device(self, identity: DeviceIdentity) -> TrackedDevice:
+        if identity.kind == "base_station":
+            return ViveBaseStation(self.vr_system, identity)
         if identity.kind == "hmd":
             return ViveHmd(self.vr_system, identity)
         if identity.kind == "controller":
