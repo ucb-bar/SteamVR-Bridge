@@ -157,4 +157,10 @@ You should see NVIDIA listed.
 
 ## Attribution
 
+### 3D Models
+
+Vive Controller and Vive Tracker are downloaded from [ViveInputUtility-Unity](https://github.com/ViveSoftware/ViveInputUtility-Unity/tree/develop/Assets/HTC.UnityPlugin/ViveInputUtility/Resources/Models).
+
 "Valve Index Lighthouse/Basestation gen2" (https://skfb.ly/6WUwA) by F53 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+"HTC Vive Pro" (https://skfb.ly/6vU6x) by Eternal Realm is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
