@@ -1,5 +1,5 @@
 """
-Configure SteamVR for headless mode.
+Toggle SteamVR HMD requirements in the Linux SteamVR configuration files.
 """
 
 import argparse

@@ -10,11 +10,15 @@ except ImportError:  # pragma: no cover - optional dependency at runtime
 
 @dataclass
 class RerunVisualizerConfig:
+    """Configuration for the optional live Rerun visualization."""
+
     app_name: str = "steamvr_bridge"
     spawn: bool = True
 
 
 class RerunVisualizer:
+    """Log tracked-device poses and assets into a Rerun viewer session."""
+
     def __init__(self, config: RerunVisualizerConfig):
         if rr is None:
             raise RuntimeError(

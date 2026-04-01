@@ -7,7 +7,7 @@ from .vive_device import DeviceIdentity, ViveDevice
 
 class ViveBaseStation(ViveDevice):
     """
-    A class representing a SteamVR base station / tracking reference.
+    SteamVR base station / tracking reference wrapper.
 
     Args:
         vr_system: The OpenVR system handle.

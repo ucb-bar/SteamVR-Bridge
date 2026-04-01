@@ -17,6 +17,8 @@ from ..transform import (
 
 @dataclass
 class DeviceIdentity:
+    """Stable user-facing metadata for a tracked SteamVR device."""
+
     index: int
     """The device index in the OpenVR system."""
     kind: str
@@ -31,7 +33,10 @@ class DeviceIdentity:
 
 class ViveDevice:
     """
-    Shared SteamVR tracked-device functionality.
+    Base wrapper for a tracked SteamVR device.
+
+    Pose and velocity values exposed by this class are converted into the
+    library's standard `+X forward, +Y left, +Z up` frame.
 
     Args:
         vr_system: Initialized OpenVR system handle.
@@ -58,11 +63,13 @@ class ViveDevice:
 
     @classmethod
     def visualization_asset_path(cls) -> Path | None:
+        """Return the packaged visualization asset path for this device type."""
         if cls.visualization_asset_filename is None:
             return None
         return Path(__file__).resolve().parents[2] / "assets" / cls.visualization_asset_filename
 
     def refresh_identity(self, identity: DeviceIdentity):
+        """Update cached metadata after device re-enumeration."""
         self.identity = identity
         self.name = identity.name
         self.role = identity.role
@@ -95,7 +102,7 @@ class ViveDevice:
 
     def update(self, pose: openvr.TrackedDevicePose_t):
         """
-        Update the device state from the latest OpenVR pose.
+        Update connection status and motion state from the latest OpenVR pose.
         """
         self._is_connected = bool(pose.bDeviceIsConnected)
         self._is_pose_valid = bool(pose.bPoseIsValid)

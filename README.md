@@ -1,76 +1,141 @@
 # SteamVR Bridge
 
-SteamVR Bridge is a library for accessing motion capture data from SteamVR.
+`steamvr-bridge` is a small Python library for reading tracked-device state from SteamVR/OpenVR and exposing it as a robotics-friendly API.
 
-This is part of the codebase used for Berkeley Humanoid Lite teleoperation demonstration.
+It is used in the Berkeley Humanoid Lite teleoperation stack and is designed for:
 
+- enumerating tracked SteamVR devices
+- reading poses, velocities, and controller inputs
+- streaming device state over UDP
+- visualizing live tracking data with Rerun
 
-## Requirement
+## Requirements
 
-- Ubuntu 24.04 or Windows 10 or Windows 11
-
+- Python 3.10 or newer
 - Steam and SteamVR installed
+- Ubuntu 24.04, Windows 10, or Windows 11
 
+## Installation
 
-## Setting up the environment
+This repository uses `uv` for environment and dependency management.
 
-1. Install uv
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-on Ubuntu:
+2. Sync the project environment
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-on Windows:
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-
-2. Create environment and install dependencies
-
-```powershell
 uv sync
 ```
 
-
-## Setting up VR scene
-
-In SteamVR Room Setup, make sure that the arrow, which represents the Y axis direction, is pointing towards the **left** of the scene.
-
-
-## Running the scripts
-
-1. Launch SteamVR application. Make sure the headset and VR controllers can be seen by the base station.
-
-2. Inspect the currently connected tracked devices:
+3. Run scripts
 
 ```bash
 uv run ./scripts/list_devices.py
 ```
 
-3. Stream all detected tracked devices over UDP:
-
 ```bash
-uv run ./scripts/stream.py --host 127.0.0.1 --port 5000
+uv run ./scripts/visualize.py
 ```
 
-4. Visualize all detected tracked devices locally:
-
 ```bash
-uv run ./scripts/visualize.py --rate 100
+uv run ./scripts/stream.py --host 127.0.0.1 --port 5000 --rate 100
 ```
 
-The session auto-discovers all connected HMDs, controllers, and trackers. Device lookup is based on SteamVR metadata, including `role` and `name`.
+A deprecated compatibility wrapper for the older controller-only UDP payload is still available for BHL project:
 
+```bash
+uv run ./scripts/deprecated_run_vr_bridge.py
+```
+
+## Coordinate Convention
+
+SteamVR Bridge converts raw SteamVR poses into a standard robotics frame:
+
+- `+X` forward
+- `+Y` left
+- `+Z` up
+
+Note that the SteamVR standing-space origin and heading still come from SteamVR Room Setup. If you re-run Room Setup, the reported world frame can change accordingly.
+
+## Device Discovery And Roles
+
+`SteamVrSession` auto-discovers connected tracked devices and currently exposes:
+
+- HMDs
+- controllers
+- trackers
+- base stations / tracking references
+
+Controller roles come from SteamVR hand-role metadata such as `left` and `right`.
+
+Tracker roles are resolved from SteamVR tracker assignments when available. For example, a tracker assigned in SteamVR as waist or left foot is exposed through the corresponding `role` string.
+
+## Quick Start
+
+```python
+from steamvr_bridge import SteamVrSession
+
+session = SteamVrSession()
+
+try:
+    session.update()
+
+    for device in session.tracked_devices:
+        print(device.name, device.kind, device.role, tuple(device.location))
+
+    left_controller = session.get_device_by_role("left")
+    print(left_controller.trigger)
+finally:
+    session.stop()
+```
+
+## Troubleshooting
+
+### SteamVR Error 307
+
+`IPC Compositor Invalid Connect Response`
+
+This is commonly caused by missing Vulkan/NVIDIA runtime pieces on Linux or by launching SteamVR from an unsupported display-server session.
+
+#### 1. Verify that you are on X11, not Wayland
+
+SteamVR currently requires an X11 session on Linux.
+
+```bash
+echo $XDG_SESSION_TYPE
+```
+
+The output must be `x11`.
+
+#### 2. Confirm that the NVIDIA driver is active
+
+```bash
+nvidia-smi
+```
+
+If this fails or shows a driver mismatch, fix the driver installation first.
+
+#### 3. Install the required Vulkan runtime packages
+
+```bash
+sudo apt install vulkan-tools libvulkan1
+```
+
+Reboot after installation.
+
+#### 4. Check the active Vulkan driver stack
+
+```bash
+vulkaninfo | grep driverName
+```
+
+You should see the NVIDIA driver in the reported list.
 
 ## Citation
 
-If you find this code useful, we would appreciate if you would cite our paper:
+If you find this code useful, we would appreciate it if you would cite our paper:
 
-```
+```bibtex
 @article{chi2025demonstrating,
   title={Demonstrating Berkeley Humanoid Lite: An Open-source, Accessible, and Customizable 3D-printed Humanoid Robot},
   author={Yufeng Chi and Qiayuan Liao and Junfeng Long and Xiaoyu Huang and Sophia Shao and Borivoje Nikolic and Zhongyu Li and Koushil Sreenath},
@@ -82,84 +147,11 @@ If you find this code useful, we would appreciate if you would cite our paper:
 }
 ```
 
-## Troubleshoot
-
-### SteamVR Error 307
-
-`IPC Compositor Invalid Connect Response`
-
-This error is most commonly caused by missing 32-bit NVIDIA and/or Vulkan libraries, or by running under the wrong display server (Wayland instead of X11).
-
-Follow the steps below to diagnose and fix the issue.
-
-#### 1. Verify You’re on X11 (Not Wayland)
-
-SteamVR currently requires an X11 session.
-
-Check your session type:
-
-```bash
-echo $XDG_SESSION_TYPE
-```
-
-The output must be `x11`.
-
-If it returns `wayland`, log out and select an X11 session from your display manager before continuing.
-
-#### 2. Confirm NVIDIA Driver Is Loaded
-
-Verify that the NVIDIA driver is active and matches the installed packages:
-
-```bash
-nvidia-smi
-```
-
-Example output:
-
-```bash
-Sun Mar  1 20:37:15 2026       
-+-----------------------------------------------------------------------------------------+
-| NVIDIA-SMI 590.48.01              Driver Version: 590.48.01      CUDA Version: 13.1     |
-+-----------------------------------------+------------------------+----------------------+
-| ... |
-```
-
-If this command fails or reports a mismatch, reinstall or fix your NVIDIA drivers before proceeding.
-
-#### 3. Install Required Vulkan Libraries
-
-Install Vulkan tools and runtime libraries:
-
-```bash
-sudo apt install vulkan-tools libvulkan1
-```
-
-After installation, **reboot your system**.
-
-#### 4. Verify the Active Vulkan Driver
-
-Check which Vulkan driver is being used:
-
-```bash
-vulkaninfo | grep driverName
-```
-
-Example output:
-
-```bash
-	driverName                                           = Intel open-source Mesa driver
-	driverName                                           = NVIDIA
-	driverName                                           = llvmpipe
-```
-
-You should see NVIDIA listed.
-
-
 ## Attribution
 
 ### 3D Models
 
-Vive Controller and Vive Tracker are downloaded from [ViveInputUtility-Unity](https://github.com/ViveSoftware/ViveInputUtility-Unity/tree/develop/Assets/HTC.UnityPlugin/ViveInputUtility/Resources/Models).
+Vive Controller and Vive Tracker models are sourced from [ViveInputUtility-Unity](https://github.com/ViveSoftware/ViveInputUtility-Unity/tree/develop/Assets/HTC.UnityPlugin/ViveInputUtility/Resources/Models).
 
 "Valve Index Lighthouse/Basestation gen2" (https://skfb.ly/6WUwA) by F53 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 

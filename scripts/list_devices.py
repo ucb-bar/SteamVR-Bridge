@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-List SteamVR/OpenVR devices (headset, controllers, trackers) and their tracking status.
+List currently detected SteamVR tracked devices and their public metadata.
 """
 
 from steamvr_bridge import SteamVrSession

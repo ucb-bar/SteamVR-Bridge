@@ -23,6 +23,20 @@ TrackedDevice = ViveBaseStation | ViveHmd | ViveController | ViveTracker
 
 
 class SteamVrSession:
+    """
+    Manage OpenVR initialization, tracked-device discovery, and pose updates.
+
+    The session eagerly enumerates tracked devices during construction and
+    refreshes that list on each update. Device pose data is exposed in the
+    library's standard `+X forward, +Y left, +Z up` frame.
+
+    Args:
+        visualizer_config: Optional Rerun visualization configuration. When
+            provided, each call to :meth:`update` also logs device state to Rerun.
+        update_rate_hz: Update frequency used by :meth:`run` when the background
+            update thread is enabled.
+    """
+
     def __init__(
         self,
         visualizer_config: RerunVisualizerConfig | None = None,
@@ -283,14 +297,17 @@ class SteamVrSession:
         return list(self.tracked_devices)
 
     def refresh_tracked_devices(self) -> list[TrackedDevice]:
+        """Re-enumerate tracked devices and return the refreshed device list."""
         with self._lock:
             return self._refresh_tracked_devices_unlocked()
 
     def get_devices_by_role(self, role: str) -> list[TrackedDevice]:
+        """Return all tracked devices matching a role string such as `left`."""
         with self._lock:
             return list(self._tracked_devices_by_role.get(role.lower(), []))
 
     def get_device_by_role(self, role: str) -> TrackedDevice:
+        """Return exactly one tracked device for a role or raise a helpful error."""
         devices = self.get_devices_by_role(role)
         if not devices:
             raise ValueError(f"No device found for tracking role {role!r}")
@@ -302,6 +319,7 @@ class SteamVrSession:
         return devices[0]
 
     def get_device_by_serial_number(self, serial_number: str) -> TrackedDevice:
+        """Look up a tracked device by its SteamVR serial number."""
         with self._lock:
             device = self._tracked_devices_by_name.get(serial_number.lower())
         if device is None:
@@ -309,6 +327,7 @@ class SteamVrSession:
         return device
 
     def update(self):
+        """Refresh tracked devices and fetch the latest pose and controller state."""
         with self._lock:
             self._refresh_tracked_devices_unlocked()
             poses = self.vr_system.getDeviceToAbsoluteTrackingPose(
@@ -344,6 +363,7 @@ class SteamVrSession:
                 time.sleep(period)
 
     def run(self):
+        """Start a background thread that continuously calls :meth:`update`."""
         if self._update_thread is not None and self._update_thread.is_alive():
             return
 
@@ -352,6 +372,7 @@ class SteamVrSession:
         self._update_thread.start()
 
     def stop(self):
+        """Stop background updates and shut down the OpenVR runtime once."""
         self.is_stopped.set()
         if self._update_thread is not None:
             self._update_thread.join()

@@ -1,5 +1,5 @@
 """
-Non-blocking SteamVR session that sends the device information through UDP.
+Stream tracked-device state over UDP, with optional live Rerun visualization.
 """
 
 import argparse

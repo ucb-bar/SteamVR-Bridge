@@ -7,7 +7,7 @@ from .vive_device import DeviceIdentity, ViveDevice
 
 class ViveHmd(ViveDevice):
     """
-    A class representing the VIVE Head-Mounted Display (HMD).
+    SteamVR head-mounted display wrapper.
 
     Args:
         vr_system: The OpenVR system handle.

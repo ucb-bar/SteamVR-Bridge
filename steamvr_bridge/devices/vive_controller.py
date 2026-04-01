@@ -11,6 +11,8 @@ def _button_mask(button_id: int) -> int:
 
 
 class ViveControllerRole(Enum):
+    """SteamVR controller role hints exposed by OpenVR."""
+
     INVALID = "invalid"
     LEFT = "left"
     RIGHT = "right"
@@ -21,10 +23,10 @@ class ViveControllerRole(Enum):
 
 class ViveController(ViveDevice):
     """
-    A class representing the VIVE Controller (2018).
+    SteamVR hand-controller wrapper with VIVE-style button and axis accessors.
 
-    For more information, please refer to the VIVE Controller (2018) product documentation:
-    https://www.vive.com/us/support/vive-pro2/category_howto/about-the-controllers---2018.html
+    The controller role is resolved from SteamVR metadata, typically producing
+    roles such as `left` and `right`.
 
     Args:
         vr_system: The OpenVR system handle.
@@ -44,6 +46,7 @@ class ViveController(ViveDevice):
         self._grip_button = False
 
     def _find_axis_index(self, axis_type: int, fallback: int) -> int:
+        """Best-effort lookup for the OpenVR axis slot used by a control input."""
         if self.vr_system is None:
             return fallback
 
@@ -66,6 +69,7 @@ class ViveController(ViveDevice):
         pose: openvr.TrackedDevicePose_t,
         controller_state: openvr.VRControllerState_t | None = None,
     ):
+        """Update pose state and the latest controller input snapshot."""
         super().update(pose)
 
         if controller_state is None:
@@ -94,60 +98,30 @@ class ViveController(ViveDevice):
 
     @property
     def menu_button(self) -> bool:
-        """
-        Get the state of the menu button.
-
-        Returns:
-            The state of the menu button as a boolean.
-        """
+        """Whether the application/menu button is currently pressed."""
         return self._menu_button
 
     @property
     def trackpad_x(self) -> float:
-        """
-        Get the state of the trackpad x axis.
-
-        Returns:
-            The state of the trackpad x axis as a float.
-        """
+        """Current horizontal trackpad axis value in the range reported by SteamVR."""
         return self._trackpad_x
 
     @property
     def trackpad_y(self) -> float:
-        """
-        Get the state of the trackpad y axis.
-
-        Returns:
-            The state of the trackpad y axis as a float.
-        """
+        """Current vertical trackpad axis value in the range reported by SteamVR."""
         return self._trackpad_y
 
     @property
     def trackpad_button(self) -> bool:
-        """
-        Get the state of the trackpad button.
-
-        Returns:
-            The state of the trackpad button as a boolean.
-        """
+        """Whether the trackpad click is currently pressed."""
         return self._trackpad_button
 
     @property
     def trigger(self) -> float:
-        """
-        Get the state of the trigger.
-
-        Returns:
-            The state of the trigger as a float.
-        """
+        """Current analog trigger value."""
         return self._trigger
 
     @property
     def grip_button(self) -> bool:
-        """
-        Get the state of the grip button.
-
-        Returns:
-            The state of the grip button as a boolean.
-        """
+        """Whether the grip button is currently pressed."""
         return self._grip_button

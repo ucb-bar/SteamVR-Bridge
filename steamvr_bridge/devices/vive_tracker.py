@@ -8,6 +8,8 @@ from .vive_device import DeviceIdentity, ViveDevice
 
 
 class ViveTrackerRole(Enum):
+    """Known SteamVR body-role assignments for generic trackers."""
+
     HELD_IN_HAND = "vive_tracker_held_in_hand"
     LEFT_FOOT = "vive_tracker_left_foot"
     RIGHT_FOOT = "vive_tracker_right_foot"
@@ -29,7 +31,10 @@ class ViveTrackerRole(Enum):
 
 class ViveTracker(ViveDevice):
     """
-    A class representing the VIVE Tracker 2.0 or 3.0.
+    Generic SteamVR tracker wrapper.
+
+    Tracker roles are inferred from SteamVR controller metadata and tracker
+    assignments stored in `steamvr.vrsettings`.
 
     Args:
         vr_system: The OpenVR system handle.
@@ -45,10 +50,12 @@ class ViveTracker(ViveDevice):
 
     @staticmethod
     def tracker_role_name(tracker_role: ViveTrackerRole) -> str:
+        """Convert a SteamVR tracker enum into the public short role string."""
         return tracker_role.value.removeprefix("vive_tracker_")
 
     @staticmethod
     def tracker_role_from_controller_type(controller_type: str) -> ViveTrackerRole | None:
+        """Resolve a tracker role directly from the OpenVR controller-type string."""
         try:
             return ViveTrackerRole(controller_type)
         except ValueError:
@@ -56,6 +63,7 @@ class ViveTracker(ViveDevice):
 
     @staticmethod
     def tracker_role_from_steamvr_role(steamvr_role: str) -> ViveTrackerRole | None:
+        """Resolve a tracker role from the role labels stored in SteamVR settings."""
         for role in ViveTrackerRole:
             suffix = "".join(part.title() for part in role.name.split("_"))
             if steamvr_role == f"TrackerRole_{suffix}":

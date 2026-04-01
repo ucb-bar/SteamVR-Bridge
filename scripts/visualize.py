@@ -1,5 +1,5 @@
 """
-Blocking SteamVR session that visualizes the device information through rerun visualizer.
+Continuously print tracked-device state and log it to the Rerun visualizer.
 """
 
 import argparse
