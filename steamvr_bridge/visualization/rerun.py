@@ -52,6 +52,13 @@ class RerunVisualizer:
         return [list(axis) for axis in basis]
 
     @staticmethod
+    def _device_label(device) -> str:
+        role = getattr(device, "role", "")
+        if not role or role in {"invalid", "disabled"}:
+            return device.name
+        return f"{device.name} ({role.replace('_', ' ')})"
+
+    @staticmethod
     def _device_model_transform(device) -> Matrix:
         return device.device_to_local_transform.inverted()
 
@@ -96,7 +103,7 @@ class RerunVisualizer:
         self._log_world_axes()
         for device in devices:
             device_path = f"devices/{device.name}"
-            color = self._color_for_kind(device.kind)
+            label = self._device_label(device)
 
             rr.log(
                 device_path,
@@ -107,12 +114,12 @@ class RerunVisualizer:
             )
             self._log_device_model(device, device_path)
             rr.log(
-                f"{device_path}/marker",
+                f"{device_path}/label",
                 rr.Points3D(
                     [[0.0, 0.0, 0.0]],
-                    radii=[0.03],
-                    colors=[color],
-                    labels=[device.name],
+                    radii=[0.0],
+                    colors=[[0, 0, 0, 0]],
+                    labels=[label],
                     show_labels=True,
                 ),
             )
