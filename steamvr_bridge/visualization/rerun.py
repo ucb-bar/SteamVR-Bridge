@@ -66,10 +66,10 @@ class RerunVisualizer:
     def _device_model_transform(device) -> Matrix:
         return device.device_to_local_transform.inverted()
 
-    def _log_device_model(self, device, device_path: str):
+    def _log_device_model(self, device, device_path: str) -> str | None:
         asset_path = device.visualization_asset_path()
         if asset_path is None or not asset_path.exists():
-            return
+            return None
 
         model_path = f"{device_path}/model"
         if model_path not in self._logged_model_paths:
@@ -85,6 +85,19 @@ class RerunVisualizer:
             ),
             static=True,
         )
+        return model_path
+
+    def _log_device_label(self, device, label_parent_path: str, label: str):
+        rr.log(
+            f"{label_parent_path}/label",
+            rr.Points3D(
+                [[0.0, 0.0, -0.02]],
+                radii=[0.0001],
+                colors=[self._color_for_kind(device.kind)],
+                labels=[label],
+                show_labels=True,
+            ),
+        )
 
     def _log_world_axes(self):
         rr.log(
@@ -97,8 +110,6 @@ class RerunVisualizer:
                     [80, 255, 120, 255],
                     [80, 140, 255, 255],
                 ],
-                labels=["world_x", "world_y", "world_z"],
-                show_labels=True,
             ),
             static=True,
         )
@@ -116,17 +127,8 @@ class RerunVisualizer:
                     quaternion=rr.Quaternion(xyzw=self._xyzw(device.orientation)),
                 ),
             )
-            self._log_device_model(device, device_path)
-            rr.log(
-                f"{device_path}/label",
-                rr.Points3D(
-                    [[0.0, 0.0, 0.0]],
-                    radii=[0.0],
-                    colors=[[0, 0, 0, 0]],
-                    labels=[label],
-                    show_labels=True,
-                ),
-            )
+            model_path = self._log_device_model(device, device_path)
+            self._log_device_label(device, model_path or device_path, label)
             rr.log(
                 f"{device_path}/axes",
                 rr.Arrows3D(
