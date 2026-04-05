@@ -61,12 +61,33 @@ class ViveDevice:
     def device_index(self) -> int:
         return self.identity.index
 
+    @staticmethod
+    def assets_dir() -> Path:
+        """Return the installed asset directory, falling back to the repo layout."""
+        package_assets_dir = Path(__file__).resolve().parent.parent / "assets"
+        if package_assets_dir.is_dir():
+            return package_assets_dir
+
+        repo_assets_dir = Path(__file__).resolve().parents[2] / "assets"
+        if repo_assets_dir.is_dir():
+            return repo_assets_dir
+
+        raise FileNotFoundError("Unable to locate SteamVR model assets.")
+
+    @staticmethod
+    def asset_path(name: str) -> Path:
+        """Return the absolute path to a packaged SteamVR model asset."""
+        path = ViveDevice.assets_dir() / name
+        if not path.is_file():
+            raise FileNotFoundError(f"SteamVR asset not found: {name}")
+        return path
+
     @classmethod
     def visualization_asset_path(cls) -> Path | None:
         """Return the packaged visualization asset path for this device type."""
         if cls.visualization_asset_filename is None:
             return None
-        return Path(__file__).resolve().parents[2] / "assets" / cls.visualization_asset_filename
+        return cls.asset_path(cls.visualization_asset_filename)
 
     def refresh_identity(self, identity: DeviceIdentity):
         """Update cached metadata after device re-enumeration."""

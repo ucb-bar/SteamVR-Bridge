@@ -112,6 +112,17 @@ finally:
     session.stop()
 ```
 
+## Access Packaged 3D Models
+
+The wheel bundles the OBJ and MTL files, so installed code can reuse them directly without downloading a second copy.
+
+```python
+from steamvr_bridge.devices import ViveDevice
+
+controller_model = ViveDevice.asset_path("ObjModelViveController.obj")
+all_models_dir = ViveDevice.assets_dir()
+```
+
 ## Troubleshooting
 
 ### SteamVR Error 307

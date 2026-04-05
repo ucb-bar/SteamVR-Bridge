@@ -21,3 +21,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["steamvr_bridge"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"assets" = "steamvr_bridge/assets"
